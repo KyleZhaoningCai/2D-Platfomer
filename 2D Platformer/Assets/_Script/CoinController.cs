@@ -12,4 +12,13 @@ public class CoinController : MonoBehaviour {
 	void Update () {
 	
 	}
+
+    // Destroy coin itself upon colliding with player
+    void OnCollisionEnter2D (Collision2D otherCollider)
+    {
+        if (otherCollider.gameObject.CompareTag("Player"))
+        {
+            Destroy(gameObject);
+        }
+    }
 }
