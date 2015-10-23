@@ -23,6 +23,11 @@ public class PlayerController : MonoBehaviour {
     public float speed = 50f;
     public float jump = 500f;
 
+    public GameObject shot;
+    public Transform shotSpawn;
+    public float fireRate;
+
+
     public VelocityRange velocityRange = new VelocityRange(300f, 1000f);
 
     // PRIVATE INSTANCE VARIABLES ++++++++++++++++++++++++++++++++
@@ -33,10 +38,13 @@ public class PlayerController : MonoBehaviour {
     private AudioSource[] _audioSources;
     private AudioSource _coinSound;
     private AudioSource _jumpSound;
+    private AudioSource _shotSound;
 
     private float _movingValue = 0;
     private bool _isFacingRight = true;
     private bool _isGrounded = true;
+
+    private float nextFire;
 
     // Use this for initialization
     void Start () {
@@ -52,7 +60,37 @@ public class PlayerController : MonoBehaviour {
         this._coinSound = this._audioSources[0];
         // Refer to the jump sound
         this._jumpSound = this._audioSources[1];
+        // Refer to the shooting sound
+        this._shotSound = this._audioSources[2];
 	}
+
+    void Update ()
+    {
+        // Allow player to shoot star
+        if (Input.GetButton("Fire1") && Time.time > nextFire)
+        {
+            // Set time for next fire
+            nextFire = Time.time + fireRate;
+            // Play Attack clip
+            this._animator.SetInteger("AnimeState", 3);
+            // Play shooting sound
+            this._shotSound.Play();
+
+            // If player is facing left, temporarily flip player to shoot star, then flip back
+            if (!this._isFacingRight)
+            {
+                this._flip();
+                // Instantiate a star GameObject
+                Instantiate(shot, shotSpawn.position, shotSpawn.rotation);
+                this._flip();
+            }
+            // Otherwise, shoots star right away
+            else
+            {
+                Instantiate(shot, shotSpawn.position, shotSpawn.rotation);
+            }
+        }
+    }
 	
 	// Update is called once per frame
 	void FixedUpdate () {
@@ -62,24 +100,28 @@ public class PlayerController : MonoBehaviour {
 
         this._movingValue = Input.GetAxis("Horizontal"); // value is between -1 and 1
 
-        this._animator.SetFloat("Speed", Mathf.Abs(this._movingValue));
 
         // Check if the player is moving
         if (this._movingValue != 0 ) // player is moving
         {
-            this._animator.SetInteger("AnimeState", 1); // Play walk clip
+            this._animator.SetInteger("AnimeState", 1); // Play run clip
 
-            if (this._movingValue * this._rigidBody2D.velocity.x < this.velocityRange.vMax) // player is moving right
+            // Check if the player has less than max velocity
+            if (this._movingValue * this._rigidBody2D.velocity.x < this.velocityRange.vMax) 
             {
+                // move player in the correct direction with _movingValue.
                 this._rigidBody2D.AddForce(Vector2.right * this._movingValue * speed);
             }
 
+            // Check if the player has more than max velocity 
             if (absVelX > this.velocityRange.vMax)
             {
+                // stop pushing the player
                 this._rigidBody2D.velocity = new Vector2(Mathf.Sign(this._rigidBody2D.velocity.x) * this.velocityRange.vMax
                     , this._rigidBody2D.velocity.y);
             }
             
+            // If the player is facing one way and it should move the other way, flip player.
             if (this._movingValue > 0 && !this._isFacingRight)
             {
                 this._flip();
@@ -102,8 +144,9 @@ public class PlayerController : MonoBehaviour {
             {
                 this._animator.SetInteger("AnimeState", 2); // Play jump clip
                 
+                // Move player along y axis
                 this._rigidBody2D.AddForce(new Vector2(0f, jump));
-                this._jumpSound.Play();
+                this._jumpSound.Play(); // play jump sound clip
                 this._isGrounded = false;
                 
             }
