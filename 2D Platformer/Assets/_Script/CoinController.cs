@@ -18,7 +18,9 @@ public class CoinController : MonoBehaviour {
     {
         if (otherCollider.gameObject.CompareTag("Player"))
         {
+            GameController.Instance.AddScore(10);
             Destroy(gameObject);
         }
+
     }
 }
