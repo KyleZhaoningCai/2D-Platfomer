@@ -1,12 +1,22 @@
-﻿using UnityEngine;
+﻿/*
+ * Project Name: Unity 2D Platformer. Player Controls a character to jump through platforms
+ *   to collect coins and destroy enemies
+ * File Name: EnemyController.cs
+ * Author's Name: Zhaoning Cai
+ * Last Modified by: Zhaoning Cai
+ * Date Last Modified: Oct 26th, 2015
+ * Revision History: 6th version (Final version)
+ */
+using UnityEngine;
 using System.Collections;
 
+// Responsible for enemy's behaviour
 public class EnemyController : MonoBehaviour {
 
     
     //PUBLIC INSTANCE VARIABLES
     public float speed = 0.5f;
-    public AnimationClip death;
+
     
 
     //PRIVATE INSTANCE VARIABLES
@@ -14,10 +24,11 @@ public class EnemyController : MonoBehaviour {
     private Transform _transform;
     private Animator _animator;
 
+
     private bool _isGrounded = false;
 
-    private float flipTime = 3;
-    private float nextFlip = 3;
+    private float flipTime = 2.5f;
+    private float nextFlip = 2.5f;
     private bool _isFacingRight = false;
 
 
@@ -28,19 +39,36 @@ public class EnemyController : MonoBehaviour {
         this._transform = gameObject.GetComponent<Transform>();
         this._animator = gameObject.GetComponent<Animator>();
         this._flip();
+
         
 	}
 	
 	// Update is called once per frame
+    void Update()
+    {
+        // If the game is over, allow user to restart by pressing "R" and reset game
+        if (GameController.Instance.gameOver)
+        {
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                Application.LoadLevel(Application.loadedLevel);
+                GameController.Instance.Reset();
+                GameController.Instance.GameOver();
+            }
+        }
+    }
+
 	void FixedUpdate () {
-	    // Check if the enemy is grounded
+        // Check whether it's time to make the enemy walk in different direction
         if (Time.time >= nextFlip)
         {
             this._flip();
             nextFlip += flipTime;
         }
+        // Check if the enemy is grounded
         if (this._isGrounded)
         {
+            // Make enemy walk left or right according to its facing
             if (this._isFacingRight)
             {
                 this._animator.SetInteger("AnimeState", 1);
@@ -52,6 +80,7 @@ public class EnemyController : MonoBehaviour {
                 this._rigidbody2D.velocity = new Vector2(-this.speed, 0f);
             }
         }
+        // Enemy is idle if it doesn't touch the ground
         else
         {
             this._animator.SetInteger("AnimeState", 0);
@@ -60,19 +89,25 @@ public class EnemyController : MonoBehaviour {
         
 	}
 
+    // Destroy player or reduce player's life
     void OnCollisionEnter2D(Collision2D otherCollider)
     {
+        // Check if the enemy collides with the player'
         if (otherCollider.gameObject.CompareTag("Player"))
         {
-            if (GameController.Instance.life > 1)
+            // If player has more than one life, then reduce the player's life only
+            if (GameController.Instance.playerLife > 1)
             {
                 GameController.Instance.ReduceLife();
                 Destroy(this.gameObject);
             }
+            // Otherwise, destroy the player after reducing player's life and game is over
             else
             {
+                GameController.Instance.ReduceLife();
                 Destroy(otherCollider.gameObject);
                 Destroy(this.gameObject);
+                GameController.Instance.GameOver();
             }
         }
     }
@@ -86,7 +121,7 @@ public class EnemyController : MonoBehaviour {
         }
     }
 
-    // Check if the enemy is touching the platform
+    // Check if the enemy is leaving the platform
     void OnCollisionExit2D(Collision2D otherCollider)
     {
         if (otherCollider.gameObject.CompareTag("Platform"))
@@ -95,15 +130,16 @@ public class EnemyController : MonoBehaviour {
         }
     }
 
+    // Check if the enemy is shot by a star (enemy doesn't interact with death trigger because of layer)
     void OnTriggerEnter2D(Collider2D other)
     {
-        
+        // Each enemy kill gives player 20 points
         GameController.Instance.AddScore(20); 
-        Instantiate(death, this._transform.position, this._transform.rotation);
         Destroy(other.gameObject, 1);
         Destroy(this.gameObject);
     }
 
+    // Flip the enemy sprite
     private void _flip()
     {
         Vector3 theScale = this._transform.localScale;

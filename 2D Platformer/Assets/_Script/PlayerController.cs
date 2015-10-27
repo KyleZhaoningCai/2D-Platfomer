@@ -1,7 +1,17 @@
-﻿using UnityEngine;
+﻿/*
+ * Project Name: Unity 2D Platformer. Player Controls a character to jump through platforms
+ *   to collect coins and destroy enemies
+ * File Name: PlayerController.cs
+ * Author's Name: Zhaoning Cai
+ * Last Modified by: Zhaoning Cai
+ * Date Last Modified: Oct 26th, 2015
+ * Revision History: 6th version (Final version)
+ */
+using UnityEngine;
 using System.Collections;
 
 // VELOCITYRANGE UTILITY CLASS
+// Responsible for player's movement velocity range
 [System.Serializable]
 public class VelocityRange
 {
@@ -17,6 +27,7 @@ public class VelocityRange
 }
 
 // PLAYERCONTROLLER CLASS
+// Responsible for player's behaviour
 public class PlayerController : MonoBehaviour {
 
     // PUBLIC INSTANCE VARIABLES +++++++++++++++++++++++++++++++++
@@ -39,6 +50,7 @@ public class PlayerController : MonoBehaviour {
     private AudioSource _coinSound;
     private AudioSource _jumpSound;
     private AudioSource _shotSound;
+    private AudioSource _enemyDeathSound;
 
     private float _movingValue = 0;
     private bool _isFacingRight = true;
@@ -62,17 +74,18 @@ public class PlayerController : MonoBehaviour {
         this._jumpSound = this._audioSources[1];
         // Refer to the shooting sound
         this._shotSound = this._audioSources[2];
+        // Refer to the enemy dying sound
+        this._enemyDeathSound = this._audioSources[3];
 	}
 
     void Update ()
     {
         // Allow player to shoot star
-        if (Input.GetButton("Fire1") && Time.time > nextFire)
+        if ((Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl)) && Time.time > nextFire)
         {
             // Set time for next fire
             nextFire = Time.time + fireRate;
-            // Play Attack clip
-            this._animator.SetInteger("AnimeState", 3);
+
             // Play shooting sound
             this._shotSound.Play();
 
@@ -92,7 +105,6 @@ public class PlayerController : MonoBehaviour {
         }
     }
 	
-	// Update is called once per frame
 	void FixedUpdate () {
 
         float absVelX = Mathf.Abs(this._rigidBody2D.velocity.x);
@@ -157,12 +169,17 @@ public class PlayerController : MonoBehaviour {
 
     }
 
-    // Plays a pick up coin sound when colliding with a coin gameobject
+    // Plays a pick up coin sound when colliding with a coin game object
+    // or plays an enemy death sound when colliding with an enemy game object
     void OnCollisionEnter2D(Collision2D otherCollider)
     {
         if (otherCollider.gameObject.CompareTag("Coin"))
         {
             this._coinSound.Play();
+        }
+        if (otherCollider.gameObject.CompareTag("Enemy"))
+        {
+            this._enemyDeathSound.Play();
         }
     }
 
